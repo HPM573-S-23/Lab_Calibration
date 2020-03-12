@@ -1,10 +1,10 @@
 from enum import Enum
 import scipy.stats as stat
 import numpy as np
-import SimPy.InOutFunctions as InOutSupport
-import SimPy.StatisticalClasses as StatSupport
+import SimPy.InOutFunctions as IO
+import SimPy.StatisticalClasses as Stat
 import MultiSurvivalModelClasses as SurvivalCls
-import CalibrationSettings as CalibSets
+import CalibrationSettings as Sets
 
 
 class CalibrationColIndex(Enum):
@@ -42,7 +42,7 @@ class Calibration:
 
             # get the average survival time for this cohort
 
-            # construct a gaussian (normal) likelihood
+            # construct a normal likelihood
             # with mean calculated from the simulated data and standard deviation from the clinical study.
             # evaluate this pdf (probability density function) at the mean reported in the clinical study.
 
@@ -50,23 +50,12 @@ class Calibration:
 
         # normalize the likelihood weights
 
-        # write the calibration result into a csv file
-
         # produce the list to report the results
 
-        # re-sample mortality probability (with replacement) according to likelihood weights
+        # write the calibration result into a csv file
 
-
-
-
-    def get_mortality_estimate_credible_interval(self, alpha):
+    def get_effective_sample_size(self):
         """
-        :param alpha: the significance level
-        :returns tuple (mean, [lower, upper]) of the posterior distribution"""
-
-        # calculate the credible interval
-
-        # estimated mortality probability
-
-        # credible interval
-
+        :returns: the effective sample size
+        """
+        return 1 / np.sum(self.normalizedWeights ** 2)
