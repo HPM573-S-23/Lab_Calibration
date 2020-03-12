@@ -1,10 +1,10 @@
 from enum import Enum
 import scipy.stats as stat
 import numpy as np
-import SimPy.InOutFunctions as InOutSupport
-import SimPy.StatisticalClasses as StatSupport
+import SimPy.InOutFunctions as IO
+import SimPy.StatisticalClasses as Stat
 import MultiSurvivalModelClasses as SurvivalCls
-import CalibrationSettings as CalibSets
+import CalibrationSettings as Sets
 
 
 class CalibrationColIndex(Enum):
@@ -36,19 +36,19 @@ class Calibration:
 
         # find values of mortality probability at which the posterior should be evaluated
         self.mortalitySamples = np.random.uniform(
-            low=CalibSets.POST_L,
-            high=CalibSets.POST_U,
-            size=CalibSets.POST_N)
+            low=Sets.POST_L,
+            high=Sets.POST_U,
+            size=Sets.POST_N)
 
         # create a multi cohort
         multi_cohort = SurvivalCls.MultiCohort(
             ids=self.cohortIDs,
             mortality_probs=self.mortalitySamples,
-            pop_sizes=[CalibSets.SIM_POP_SIZE]*CalibSets.POST_N
+            pop_sizes=[Sets.SIM_POP_SIZE] * Sets.POST_N
         )
 
         # simulate the multi cohort
-        multi_cohort.simulate(n_time_steps=CalibSets.TIME_STEPS)
+        multi_cohort.simulate(n_time_steps=Sets.TIME_STEPS)
 
         # calculate the likelihood of each simulated cohort
         weights = []
@@ -57,13 +57,13 @@ class Calibration:
             # get the average survival time for this cohort
             mean = multi_cohort.multiCohortOutcomes.meanSurvivalTimes[cohort_id]
 
-            # construct a gaussian (normal) likelihood
+            # construct a normal likelihood
             # with mean calculated from the simulated data and standard deviation from the clinical study.
             # evaluate this pdf (probability density function) at the mean reported in the clinical study.
             weight = stat.norm.pdf(
-                x=CalibSets.OBS_MEAN,
+                x=Sets.OBS_MEAN,
                 loc=mean,
-                scale=CalibSets.OBS_STDEV)
+                scale=Sets.OBS_STDEV)
 
             # store the weight
             weights.append(weight)
@@ -80,31 +80,15 @@ class Calibration:
                 [self.cohortIDs[i], self.normalizedWeights[i], self.mortalitySamples[i]])
 
         # write the calibration result into a csv file
-        InOutSupport.write_csv(
+        IO.write_csv(
             file_name='CalibrationResults.csv',
             rows=csv_rows)
 
-        # re-sample mortality probability (with replacement) according to likelihood weights
-        self.mortalityResamples = np.random.choice(
-            a=self.mortalitySamples,
-            size=n_samples,
-            replace=True,
-            p=self.normalizedWeights)
-
-    def get_mortality_estimate_credible_interval(self, alpha):
+    def get_effective_sample_size(self):
         """
-        :param n_samples: number of resamples from parameter values
-        :param alpha: the significance level
-        :returns tuple (mean, [lower, upper]) of the posterior distribution"""
-
-        # calculate the credible interval
-        sum_stat = StatSupport.SummaryStat(name='Posterior samples',
-                                           data=self.mortalityResamples)
-
-        estimate = sum_stat.get_mean()  # estimated mortality probability
-        credible_interval = sum_stat.get_PI(alpha=alpha)  # credible interval
-
-        return estimate, credible_interval
+        :returns: the effective sample size
+        """
+        return 1 / np.sum(self.normalizedWeights ** 2)
 
 
 class CalibratedModel:
@@ -148,3 +132,14 @@ class CalibratedModel:
         :returns tuple in the form of (mean, [lower, upper]) of projection interval
         """
 
+
+        return mean, proj_interval
+
+    def get_mortality_estimate_credible_interval(self, alpha):
+        """
+        :param alpha: the significance level
+        :returns tuple (mean, [lower, upper]) of the posterior distribution"""
+
+        # calculate the credible interval
+
+        return estimate, credible_interval
