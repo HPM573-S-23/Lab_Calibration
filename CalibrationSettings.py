@@ -17,4 +17,4 @@ OBS_STDEV =
 
 # how to sample the posterior distribution of mortality probability
 # minimum, maximum and the number of samples for the mortality probability
-PRIOR_L, PRIOR_U, PRIOR_N = 0.05, 0.25, 200
+PRIOR_L, PRIOR_U, PRIOR_N = 0.05, 0.15, 200
